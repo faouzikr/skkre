@@ -1,0 +1,5 @@
+administrator
+administrador
+User
+admin
+Admin
