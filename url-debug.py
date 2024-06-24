@@ -11,7 +11,7 @@ from os import path
 from concurrent.futures import ThreadPoolExecutor
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-Bot_TOKEN = "6499451854:AAG9WRVTVM2ILmjnoLWLN1OQYGbEY4dxskQ"
+Bot_TOKEN = "7159708949:AAHbCrsK2NnucwuDeKLcCdzlBEqEiiiK9yI"
 USER_ID = "1312277549"
 pattern = r"sk_live_([A-Za-z0-9]+)"
 
