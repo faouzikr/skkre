@@ -1,13 +1,9 @@
 import re
 import sys
 import os
-import time
 import socket
 import urllib3
-import smtplib
-import os.path
 import requests
-from os import path
 from concurrent.futures import ThreadPoolExecutor, as_completed
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -145,6 +141,20 @@ def generate_ip_range(start_ip, end_ip):
         ip_range.append(".".join(map(str, temp)))
     return ip_range
 
+def check_ports_for_ip_range(ip_range, max_workers):
+    open_ips = []
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        future_to_ip = {executor.submit(check_ports, ip): ip for ip in ip_range}
+        for future in as_completed(future_to_ip):
+            ip = future_to_ip[future]
+            try:
+                result = future.result()
+                if result['80'] or result['443']:
+                    open_ips.append(ip)
+            except Exception as exc:
+                print(f"{ip} generated an exception: {exc}")
+    return open_ips
+
 def main():
     os.system('clear')
     print(""" \033[38;2;158;158;158m
@@ -169,21 +179,11 @@ def main():
     
     ip_range = generate_ip_range(start_ip, end_ip)
     
+    # Check IPs for open ports before scanning for .env files
+    open_ips = check_ports_for_ip_range(ip_range, thrd)
+
     env_scanner = ENV()
     
-    # Scan IPs for open ports before scanning for .env files
-    with ThreadPoolExecutor(max_workers=thrd) as executor:
-        future_to_ip = {executor.submit(check_ports, ip): ip for ip in ip_range}
-        open_ips = []
-        for future in as_completed(future_to_ip):
-            ip = future_to_ip[future]
-            try:
-                result = future.result()
-                if result['80'] or result['443']:
-                    open_ips.append(ip)
-            except Exception as exc:
-                print(f"{ip} generated an exception: {exc}")
-
     with ThreadPoolExecutor(max_workers=thrd) as executor:
         for data in open_ips:
             executor.submit(env_scanner.scan, data)
