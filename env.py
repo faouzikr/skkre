@@ -49,12 +49,8 @@ class ENV:
                 if any(key in resp for key in self.mch):
                     self.save_output(url, proto, resp)
                     self.counts["total_env"] += 1
-                else:
-                    self.counts["dead_sk"] += 1
-            else:
-                self.counts["dead_sk"] += 1
         except requests.RequestException:
-            self.counts["dead_sk"] += 1
+            pass
 
     def save_output(self, url, proto, resp):
         os.makedirs('ENVS', exist_ok=True)
