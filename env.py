@@ -63,7 +63,7 @@ class ENV:
                 if "sk_live" in line:
                     self.log_live_key(line)
         if "BRAINTREE_PUBLIC_KEY" in resp:
-            with open('Braintree.txt', 'a') as file_object:
+            with open('BraintreeENV.txt', 'a') as file_object:
                 file_object.write(f'Braintree : {url}\n')
             self.counts["braintree"] += 1
 
