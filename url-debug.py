@@ -51,7 +51,7 @@ class ENV:
                         self.process_sk(sk_live)
 
                 if "BRAINTREE_PUBLIC_KEY" in resp:
-                    with open('Braintree.txt', 'a') as file_object:
+                    with open('BraintreeDEBUG.txt', 'a') as file_object:
                         file_object.write(f'Braintree : {url}\n')
                     self.counts["braintree"] += 1
         except Exception:
